@@ -71,11 +71,11 @@ label {
 }
 
 input[type=text] {
-    width: 400px;
+    width: 500px;
     padding: 2px;
 }
 
 textarea {
-    width: 400px;
+    width: 500px;
     height: 200px;
 }

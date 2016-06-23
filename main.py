@@ -48,6 +48,24 @@ class NewPostHandler(Handler):
     def get(self):
         self.render(newpost_page)
 
+    def post(self):
+        title = self.request.get('blog-title')
+        content = self.request.get('blog-content')
+
+        if title and content:
+            self.render(
+                newpost_page,
+                blog_title=title,
+                blog_content=content,
+                error='Nice work!')
+        else:
+            error = 'Need both title and content'
+            self.render(
+                newpost_page,
+                blog_title=title,
+                blog_content=content,
+                error=error)
+
 
 class BlogMainHandler(Handler):
     def get(self):
