@@ -1,0 +1,67 @@
+/** {
+    border: 1px solid red;
+}*/
+
+body {
+    position: relative;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px;
+    color: #333;
+}
+
+header h1 {
+    color: black;
+}
+
+
+/*
+Got this div-height solution from
+http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height
+ */
+/*.row {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display:         flex;
+  flex-wrap: wrap;
+}
+.row > [class*='col-'] {
+  display: flex;
+  flex-direction: column;
+}*/
+
+.header-div {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.title-row {
+    border-bottom: 3px solid #666;
+}
+
+.blog-title, .blog-date {
+    height: 35px;
+}
+
+.blog-title {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.blog-date {
+    color: #999;
+}
+
+.date-span {
+    position: absolute;
+    bottom: 5px;
+    right: 0;
+}
+
+.blog-content {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
