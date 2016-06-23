@@ -2,13 +2,25 @@
 
 {% block content %}
 
-<h2>new post</h2>
-<br>
-subject
-<input type="text" name="blog-title">
-<br>
-blog
-<input type="textarea" name="blog-content">
-<input type="submit">
-
+<div class="container-fluid">
+    <h2>new post</h2>
+    <form action="" method="post">
+        <div>
+            <label for="">
+                <div>Title</div>
+                <input type="text" name="blog-title">
+            </label>
+        </div>
+        <div>
+            <label for="">
+                <div>Blog Content</div>
+                <textarea name="blog-content" id="" cols="30" rows="10"></textarea>
+            </label>
+        </div>
+        <div class="error">
+            {{error}}
+        </div>
+        <input type="submit">
+    </form>
+</div>
 {% endblock %}

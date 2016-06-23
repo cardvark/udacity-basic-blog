@@ -28,7 +28,8 @@ jinja_env = jinja2.Environment(
     )
 
 front_page = 'front.html'
-blog_post = 'blog-post.html'
+blog_post_page = 'blog-post.html'
+newpost_page = 'newpost.html'
 
 
 class Handler(webapp2.RequestHandler):
@@ -43,9 +44,14 @@ class Handler(webapp2.RequestHandler):
         self.write(self.render_str(template, **kw))
 
 
+class NewPostHandler(Handler):
+    def get(self):
+        self.render(newpost_page)
+
+
 class BlogMainHandler(Handler):
     def get(self):
-        self.render(blog_post)
+        self.render(blog_post_page)
 
 
 class MainHandler(Handler):
@@ -54,5 +60,6 @@ class MainHandler(Handler):
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/blog', BlogMainHandler)
+    ('/blog', BlogMainHandler),
+    ('/blog/newpost', NewPostHandler)
 ], debug=True)

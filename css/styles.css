@@ -65,3 +65,17 @@ http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all
     margin-top: 10px;
     margin-bottom: 10px;
 }
+
+label {
+    display: block;
+}
+
+input[type=text] {
+    width: 400px;
+    padding: 2px;
+}
+
+textarea {
+    width: 400px;
+    height: 200px;
+}
