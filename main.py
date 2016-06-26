@@ -99,10 +99,12 @@ class ThanksPageHandler(Handler):
     # Deprecated; Was using as placeholder for new post entry
     # /blog/thanks page still works, but not otherwise used.
     def get(self):
-        self.render(thanks_page, redirect_main=True)
-        # time.sleep(5)
-        # self.redirect('/blog')
-
+        username = self.request.get('username')
+        self.render(
+            thanks_page,
+            username=username,
+            redirect_main=True
+            )
 
 class BlogMainHandler(Handler):
     def get(self, blog_id=None):
@@ -170,7 +172,7 @@ class SignupHandler(Handler):
             valid_input = False
 
         if username and password and password_verify and valid_input:
-            self.redirect('/welcome?username=' + username)
+            self.redirect('/blog/thanks?username=' + username)
         else:
             self.render(
                 signup_page,
