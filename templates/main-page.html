@@ -3,6 +3,8 @@
 {% block content %}
 
 {# <div class="container-fluid"> #}
+    {% for blog in blogs %}
+
     <div class="row title-row">
         <div class="col-sm-6 blog-title">
             {{blog.title}}
@@ -21,7 +23,10 @@
             -- Author Name
         </div>
     </div> #}
-{# </div> #}
+    <br>
+    <br>
 
+    {% endfor %}
+{# </div> #}
 
 {% endblock %}

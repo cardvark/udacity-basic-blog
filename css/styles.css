@@ -16,7 +16,6 @@ header h1 {
     color: black;
 }
 
-
 /*
 Got this div-height solution from
 http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height
@@ -36,6 +35,22 @@ http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all
 .header-div {
     margin-top: 20px;
     margin-bottom: 15px;
+}
+
+.new-post-span {
+    position: absolute;
+    right: 0;
+    border: solid 1px gray;
+    padding: 5px 10px 5px 10px;
+    margin-top: 45px;
+}
+
+.new-post-span a {
+    color: black;
+}
+
+.new-post-span a:hover {
+    text-decoration: none;
 }
 
 .title-row {
@@ -64,6 +79,7 @@ http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all
 .blog-content {
     margin-top: 10px;
     margin-bottom: 10px;
+    white-space: pre-wrap;
 }
 
 .author-name {
@@ -86,4 +102,16 @@ textarea {
 
 .error {
     color: red;
+}
+
+@media only screen and (max-width: 768px) {
+    .new-post-span {
+        margin-top: 0px;
+    }
+
+    .blog-title {
+        font-size: 15px;
+    }
+
+
 }

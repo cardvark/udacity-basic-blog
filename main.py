@@ -17,8 +17,6 @@
 import webapp2
 import os
 import jinja2
-import time
-
 from google.appengine.ext import db
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -31,6 +29,7 @@ front_page = 'front.html'
 blog_post_page = 'blog-post.html'
 newpost_page = 'newpost.html'
 thanks_page = 'thanks-post.html'
+main_page = 'main-page.html'
 
 
 class Blogs(db.Model):
@@ -56,15 +55,15 @@ class NewPostHandler(Handler):
         self.render(newpost_page)
 
     def post(self):
-        title = self.request.get('blog-title')
-        content = self.request.get('blog-content')
+        title = self.request.get('subject')
+        content = self.request.get('content')
 
         if title and content:
             new_blog = Blogs(title=title, content=content)
             new_blog.put()
             blog_id = new_blog.key().id()
             print blog_id
-            self.redirect('/blog/thanks')
+            self.redirect('/blog/' + str(blog_id))
         else:
             error = 'Need both title and content'
             self.render(
@@ -84,9 +83,21 @@ class ThanksPageHandler(Handler):
 class BlogMainHandler(Handler):
     def get(self, blog_id=None):
         if blog_id:
-            self.write("whoa! " + blog_id)
+            key = db.Key.from_path('Blogs', int(blog_id))
+            blog = db.get(key)
+            if blog:
+                self.render(blog_post_page, blog=blog)
+            else:
+                self.redirect('/blog')
+
         else:
-            self.render(blog_post_page)
+            blogs = db.GqlQuery("""SELECT *
+                from Blogs
+                order by created desc
+                limit 20
+                """)
+
+            self.render(main_page, blogs=blogs)
 
 
 class MainHandler(Handler):
