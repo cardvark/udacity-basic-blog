@@ -102,7 +102,7 @@ class BlogMainHandler(Handler):
 
 class MainHandler(Handler):
     def get(self):
-        self.write("Hello Blog!")
+        self.redirect('/blog')
 
 
 app = webapp2.WSGIApplication([
