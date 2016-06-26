@@ -17,6 +17,7 @@
 import webapp2
 import os
 import jinja2
+import re
 from google.appengine.ext import db
 
 # Setting up jinja templates file path
@@ -26,13 +27,24 @@ jinja_env = jinja2.Environment(
     autoescape=True
     )
 
+# regex requirements for user, password, email.
+user_re = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+password_re = re.compile(r"^.{3,20}$")
+email_re = re.compile(r"^[\S]+@[\S]+.[\S]+$")
+
+
+# check validity of input based on regex reqs.
+def valid_check(text_input, re_check):
+    return re_check.match(text_input)
+
+
 # jinja templates, located in /templates
 front_page = 'front.html'
 blog_post_page = 'blog-post.html'
 newpost_page = 'newpost.html'
 thanks_page = 'thanks-post.html'
 main_page = 'main-page.html'
-
+signup_page = 'signup.html'
 
 # Blogs kind.  Each entity must have title and content.
 class Blogs(db.Model):
@@ -120,6 +132,52 @@ class BlogMainHandler(Handler):
             self.render(main_page, blogs=blogs)
 
 
+class SignupHandler(Handler):
+    def get(self):
+        self.render(signup_page)
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+        password_verify = self.request.get('verify')
+        email = self.request.get('email')
+
+        username_error = ''
+        password_error = ''
+        password_mismatch = ''
+        email_error = ''
+
+        valid_input = True
+
+        params = {
+            'username': username,
+            'email': email
+        }
+
+        if not valid_check(username, user_re):
+            params['username_error'] = "Not a valid username."
+            valid_input = False
+
+        if not valid_check(password, password_re):
+            params['password_error'] = "Not a valid password."
+            valid_input = False
+        elif password != password_verify:
+            params['password_mismatch'] = "Passwords didn't match."
+            valid_input = False
+
+        if email and not valid_check(email, email_re):
+            params['email_error'] = "Not a valid email"
+            valid_input = False
+
+        if username and password and password_verify and valid_input:
+            self.redirect('/welcome?username=' + username)
+        else:
+            self.render(
+                signup_page,
+                **params
+                )
+
+
 class MainHandler(Handler):
     def get(self):
         self.redirect('/blog')
@@ -130,5 +188,6 @@ app = webapp2.WSGIApplication([
     ('/blog', BlogMainHandler),
     ('/blog/newpost', NewPostHandler),
     ('/blog/thanks', ThanksPageHandler),
+    ('/blog/signup', SignupHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
 ], debug=True)

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+        <h1>Signup</h1>
+        <div class="container-fluid signup-container">
+            <form method="post">
+                <div class="row">
+                    <div class="col">Username</div>
+                    <div class="col"><input type="text" name="username" value="{{username}}"></div>
+                    <div class="col error">{{username_error}}</div>
+                </div>
+                <div class="row">
+                    <div class="col">Password</div>
+                    <div class="col"><input type="password" name="password"></div>
+                    <div class="col error">{{password_error}}</div>
+                </div>
+                <div class="row">
+                    <div class="col">Password verify</div>
+                    <div class="col"><input type="password" name="verify"></div>
+                    <div class="col error">{{password_mismatch}}</div>
+                </div>
+                <div class="row">
+                    <div class="col">Email (Optional)</div>
+                    <div class="col"><input type="text" name="email" value="{{email}}"></div>
+                    <div class="col error">{{email_error}}</div>
+                </div>
+                <br>
+                <input type="submit">
+            </form>
+        </div>
+
+{% endblock %}

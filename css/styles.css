@@ -90,18 +90,56 @@ label {
     display: block;
 }
 
-input[type=text] {
+.title-input {
     width: 500px;
     padding: 2px;
 }
 
-textarea {
+.content-area {
     width: 500px;
     height: 200px;
 }
 
 .error {
     color: red;
+}
+
+.signup-container {
+  margin-right: auto;
+  margin-left: auto;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+div.signup-container div.row {
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+div.signup-container div.row:before, div.signup-container div.row:after {
+    content: " ";
+    display: table;
+}
+
+div.signup-container div.row:after {
+    clear: both;
+}
+
+div.signup-container .col {
+    position: relative;
+    min-height: 1px;
+    padding-left: 15px;
+    /*padding-right: 15px;*/
+    width: 20%;
+    /*float: left;*/
+}
+
+div.signup-container input {
+    margin-bottom: 10px;
+}
+
+div.signup-container div.error {
+    width: 40%;
 }
 
 @media only screen and (max-width: 768px) {
