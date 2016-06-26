@@ -1,0 +1,21 @@
+    <div class="row title-row">
+        <div class="col-sm-6 blog-title">
+            {{blog.title}}
+        </div>
+        <div class="col-sm-6 blog-date">
+            <span class="date-span">
+                {{blog.created.strftime('%b %d, %Y - %I:%M%p')}}
+            </span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12 blog-content">{{blog.content}}</div>
+    </div>
+    {# Note - will be adding author text in a subsequent step. #}
+{#     <div class="row">
+        <div class="col-sm-6 author-name">
+            -- Author Name
+        </div>
+    </div> #}
+    <br>
+    <br>
