@@ -2,14 +2,16 @@
 
 {% block content %}
 
+{% for post in blogs %}
+
 <div class="container-fluid">
     <div class="row title-row">
         <div class="col-sm-6 blog-title">
-            Blog Post Title
+            {{post.title}}
         </div>
         <div class="col-sm-6 blog-date">
             <span class="date-span">
-                June 22, 2016
+                {{post.date}}
             </span>
         </div>
     </div>
@@ -32,5 +34,7 @@
         </div>
     </div> #}
 </div>
+
+{% endfor %}
 
 {% endblock %}

@@ -66,6 +66,10 @@ http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all
     margin-bottom: 10px;
 }
 
+.author-name {
+    color: #999;
+}
+
 label {
     display: block;
 }
@@ -78,4 +82,8 @@ input[type=text] {
 textarea {
     width: 500px;
     height: 200px;
+}
+
+.error {
+    color: red;
 }

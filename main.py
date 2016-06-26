@@ -30,6 +30,13 @@ jinja_env = jinja2.Environment(
 front_page = 'front.html'
 blog_post_page = 'blog-post.html'
 newpost_page = 'newpost.html'
+thanks_page = 'thanks-post.html'
+
+
+class Blogs(db.Model):
+    title = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
 
 
 class Handler(webapp2.RequestHandler):
@@ -53,11 +60,11 @@ class NewPostHandler(Handler):
         content = self.request.get('blog-content')
 
         if title and content:
-            self.render(
-                newpost_page,
-                blog_title=title,
-                blog_content=content,
-                error='Nice work!')
+            new_blog = Blogs(title=title, content=content)
+            new_blog.put()
+            blog_id = new_blog.key().id()
+            print blog_id
+            self.redirect('/blog/thanks')
         else:
             error = 'Need both title and content'
             self.render(
@@ -67,17 +74,30 @@ class NewPostHandler(Handler):
                 error=error)
 
 
-class BlogMainHandler(Handler):
+class ThanksPageHandler(Handler):
     def get(self):
-        self.render(blog_post_page)
+        self.render(thanks_page, redirect_main=True)
+        # time.sleep(5)
+        # self.redirect('/blog')
+
+
+class BlogMainHandler(Handler):
+    def get(self, blog_id=None):
+        if blog_id:
+            self.write("whoa! " + blog_id)
+        else:
+            self.render(blog_post_page)
 
 
 class MainHandler(Handler):
     def get(self):
         self.write("Hello Blog!")
 
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/blog', BlogMainHandler),
-    ('/blog/newpost', NewPostHandler)
+    ('/blog/newpost', NewPostHandler),
+    ('/blog/thanks', ThanksPageHandler),
+    webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
 ], debug=True)
