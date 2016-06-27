@@ -89,10 +89,31 @@ def valid_pw(name, pw, h):
         return True
 
 
+def user_entry(username, password, email):
+    pw = make_pw_hash(username, password)
+
+    new_user = Users(
+        user_name=username,
+        pw=pw,
+        email=email
+        )
+    new_user.put()
+    user_id = new_user.key().id()
+    return user_id
+
+
+
 # Blogs kind.  Each entity must have title and content.
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+
+
+class Users(db.Model):
+    user_name = db.StringProperty(required=True)
+    pw = db.StringProperty(required=True)
+    email = db.StringProperty()
     created = db.DateTimeProperty(auto_now_add=True)
 
 
@@ -143,11 +164,14 @@ class ThanksPageHandler(Handler):
     # /blog/thanks page still works, but not otherwise used.
     def get(self):
         username = self.request.get('username')
-        self.render(
-            thanks_page,
-            username=username,
-            redirect_main=True
-            )
+        user_id = self.request.cookies.get('user_id')
+        if check_secure_val(user_id):
+            self.render(
+                thanks_page,
+                username=username,
+                redirect_main=True
+                )
+
 
 class BlogMainHandler(Handler):
     def get(self, blog_id=None):
@@ -215,6 +239,14 @@ class SignupHandler(Handler):
             valid_input = False
 
         if username and password and password_verify and valid_input:
+            base_user_id = user_entry(username, password, email)
+            print base_user_id
+            user_id = make_secure_val(str(base_user_id))
+            print user_id
+            self.response.headers.add_header(
+                'Set-Cookie',
+                'user_id={user_id}'.format(user_id=user_id)
+                )
             self.redirect('/blog/thanks?username=' + username)
         else:
             self.render(
