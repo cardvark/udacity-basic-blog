@@ -163,14 +163,19 @@ class ThanksPageHandler(Handler):
     # Deprecated; Was using as placeholder for new post entry
     # /blog/thanks page still works, but not otherwise used.
     def get(self):
-        username = self.request.get('username')
+        # username = self.request.get('username')
         user_id = self.request.cookies.get('user_id')
         if check_secure_val(user_id):
+            user = user_id.split('|')[0]
+            key = db.Key.from_path('Users', int(user))
+            username = db.get(key).user_name
             self.render(
                 thanks_page,
                 username=username,
                 redirect_main=True
                 )
+        else:
+            self.redirect('/blog/signup')
 
 
 class BlogMainHandler(Handler):
@@ -240,14 +245,12 @@ class SignupHandler(Handler):
 
         if username and password and password_verify and valid_input:
             base_user_id = user_entry(username, password, email)
-            print base_user_id
             user_id = make_secure_val(str(base_user_id))
-            print user_id
             self.response.headers.add_header(
                 'Set-Cookie',
                 'user_id={user_id}'.format(user_id=user_id)
                 )
-            self.redirect('/blog/thanks?username=' + username)
+            self.redirect('/blog/thanks')
         else:
             self.render(
                 signup_page,
