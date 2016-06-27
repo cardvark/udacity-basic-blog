@@ -1,23 +1,13 @@
 #!/usr/bin/env python
-#
-# Copyright 2007 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+
 import webapp2
 import os
 import jinja2
 import re
+import random
+import string
+import hmac
+import hashlib
 from google.appengine.ext import db
 
 # Setting up jinja templates file path
@@ -33,9 +23,10 @@ password_re = re.compile(r"^.{3,20}$")
 email_re = re.compile(r"^[\S]+@[\S]+.[\S]+$")
 
 
-# check validity of input based on regex reqs.
-def valid_check(text_input, re_check):
-    return re_check.match(text_input)
+# 'SECRET' to be added for cookie hashing.
+# 'PEPPER' to add to salt for pw hashing.
+SECRET = 'secretforcookies'
+PEPPER = 'specialsecretpasswords'
 
 
 # jinja templates, located in /templates
@@ -45,6 +36,58 @@ newpost_page = 'newpost.html'
 thanks_page = 'thanks-post.html'
 main_page = 'main-page.html'
 signup_page = 'signup.html'
+
+
+# check validity of input based on regex reqs.
+def valid_check(text_input, re_check):
+    return re_check.match(text_input)
+
+
+# hashes string; for cookies.  Uses 'SECRET' to obfuscate.
+def hash_str(s):
+    return hmac.new(SECRET, s).hexdigest()
+
+
+# creates secure cookie string
+def make_secure_val(s):
+    return '{s}|{hash}'.format(s=s, hash=hash_str(s))
+
+
+# checks secure cookie string sent by user
+def check_secure_val(h):
+    val = h.split('|')[0]
+    if h == make_secure_val(val):
+        return val
+
+
+# creates random 5 letter string. Salt for hmac pw hashing
+def make_salt():
+    output_str = ''
+    for i in range(5):
+        output_str += random.choice(string.letters)
+
+    return output_str
+
+
+# pw hash with salt and pepper
+# salt saved with hashed pw.
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+
+    h = hashlib.sha256(PEPPER + name + pw + salt).hexdigest()
+    return '{hash_out}|{salt}'.format(
+        hash_out=h,
+        salt=salt
+        )
+
+
+def valid_pw(name, pw, h):
+    salt = h.split('|')[1]
+
+    if h == make_pw_hash(name, pw, salt):
+        return True
+
 
 # Blogs kind.  Each entity must have title and content.
 class Blogs(db.Model):
