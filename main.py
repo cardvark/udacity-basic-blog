@@ -102,6 +102,15 @@ def user_entry(username, password, email):
     return user_id
 
 
+def user_exists(user):
+    q = db.GqlQuery("""SELECT *
+        from Users
+        where user_name = '{user}'
+        """.format(user=user))
+
+    if q.get():
+        return True
+
 
 # Blogs kind.  Each entity must have title and content.
 class Blogs(db.Model):
@@ -145,7 +154,6 @@ class NewPostHandler(Handler):
             new_blog = Blogs(title=title, content=content)
             new_blog.put()
             blog_id = new_blog.key().id()
-            # print blog_id
             self.redirect('/blog/' + str(blog_id))
         else:
             # If user tries to submit blog w/ out title and content
@@ -160,11 +168,9 @@ class NewPostHandler(Handler):
 
 
 class ThanksPageHandler(Handler):
-    # Deprecated; Was using as placeholder for new post entry
-    # /blog/thanks page still works, but not otherwise used.
     def get(self):
-        # username = self.request.get('username')
         user_id = self.request.cookies.get('user_id')
+
         if check_secure_val(user_id):
             user = user_id.split('|')[0]
             key = db.Key.from_path('Users', int(user))
@@ -216,17 +222,16 @@ class SignupHandler(Handler):
         password_verify = self.request.get('verify')
         email = self.request.get('email')
 
-        username_error = ''
-        password_error = ''
-        password_mismatch = ''
-        email_error = ''
-
         valid_input = True
 
         params = {
             'username': username,
             'email': email
         }
+
+        if user_exists(username):
+            params['username_error'] = "Username already taken."
+            valid_input = False
 
         if not valid_check(username, user_re):
             params['username_error'] = "Not a valid username."
@@ -258,6 +263,28 @@ class SignupHandler(Handler):
                 )
 
 
+class GqlHandler(Handler):
+    def get(self):
+        def checkName(user):
+            q = db.GqlQuery("""SELECT *
+                from Users
+                where user_name = '{user}'
+                """.format(user=user))
+
+            if q.get():
+                return "Got him!"
+            else:
+                "User not found"
+
+        self.write(
+            checkName('bobo')
+            )
+
+        # for item in q:
+        #     self.write(item.pw)
+        #     self.write('<br>')
+
+
 class MainHandler(Handler):
     def get(self):
         self.redirect('/blog')
@@ -269,5 +296,6 @@ app = webapp2.WSGIApplication([
     ('/blog/newpost', NewPostHandler),
     ('/blog/thanks', ThanksPageHandler),
     ('/blog/signup', SignupHandler),
+    # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
 ], debug=True)
