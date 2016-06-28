@@ -256,10 +256,10 @@ class SignupHandler(Handler):
             base_user_id = user_entry(username, password, email)
             user_id = make_secure_val(str(base_user_id))
             self.response.headers.add_header(
-                'Set-Cookie',
-                'user_id={user_id}'.format(user_id=user_id)
+                'set-cookie',
+                'user_id={user_id}; Path=/'.format(user_id=user_id)
                 )
-            self.redirect('/blog/thanks')
+            self.redirect('/blog/welcome')
         else:
             self.render(
                 signup_page,
@@ -298,7 +298,7 @@ app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/blog', BlogMainHandler),
     ('/blog/newpost', NewPostHandler),
-    ('/blog/thanks', ThanksPageHandler),
+    ('/blog/welcome', ThanksPageHandler),
     ('/blog/signup', SignupHandler),
     # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
