@@ -89,6 +89,7 @@ def valid_pw(name, pw, h):
         return True
 
 
+# creates new Users entity.  returns user_id for user cookie.
 def user_entry(username, password, email):
     pw = make_pw_hash(username, password)
 
@@ -102,6 +103,7 @@ def user_entry(username, password, email):
     return user_id
 
 
+# checks if name exists in Users.
 def user_exists(user):
     q = db.GqlQuery("""SELECT *
         from Users
@@ -112,7 +114,6 @@ def user_exists(user):
         return True
 
 
-# Blogs kind.  Each entity must have title and content.
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
@@ -171,7 +172,10 @@ class ThanksPageHandler(Handler):
     def get(self):
         user_id = self.request.cookies.get('user_id')
 
-        if check_secure_val(user_id):
+        # checks user's cookie on this page.
+        # if has user_id cookie and user_id is valid, says thanks.
+        # pulls name from Users.
+        if user_id and check_secure_val(user_id):
             user = user_id.split('|')[0]
             key = db.Key.from_path('Users', int(user))
             username = db.get(key).user_name
