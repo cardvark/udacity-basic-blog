@@ -15,18 +15,23 @@
     <body>
         <div class="container-fluid">
             <header>
-                    <div class="row">
-                        <div class="col-sm-6 header-div">
-                            <a href="/blog"><h1>A Basic Blog</h1></a>
-                        </div>
-                        <div class="col-sm-6 new-post-div">
-                            <a href="/blog/newpost">
-                                <span class="new-post-span">
-                                    New Post
-                                </span>
-                            </a>
-                        </div>
+                <div class="row">
+                    <div class="col-sm-12 account-links">
+                        <a href="/blog/signup">Signup</a> / <a href="/blog/login">Login</a>
                     </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6 header-div">
+                        <a href="/blog"><h1>A Basic Blog</h1></a>
+                    </div>
+                    <div class="col-sm-6 new-post-div">
+                        <a href="/blog/newpost">
+                            <span class="new-post-span">
+                                New Post
+                            </span>
+                        </a>
+                    </div>
+                </div>
             </header>
             <section>
                 {% block content %}

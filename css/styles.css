@@ -37,6 +37,14 @@ http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all
     margin-bottom: 15px;
 }
 
+.account-links {
+    text-align: right;
+}
+
+.account-links a {
+    color: black;
+}
+
 .new-post-span {
     position: absolute;
     right: 0;
