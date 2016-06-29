@@ -16,21 +16,13 @@ header h1 {
     color: black;
 }
 
-/*
-Got this div-height solution from
-http://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height
- */
-/*.row {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display:         flex;
-  flex-wrap: wrap;
+a {
+    color: black;
 }
-.row > [class*='col-'] {
-  display: flex;
-  flex-direction: column;
-}*/
+
+a:hover {
+    text-decoration: none;
+}
 
 .header-div {
     margin-top: 20px;

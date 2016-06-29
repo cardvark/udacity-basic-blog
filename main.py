@@ -141,12 +141,15 @@ class Handler(webapp2.RequestHandler):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
-    def render_str(self, template, **params):
+    def render_str(self, template, logged_in, **params):
         t = jinja_env.get_template(template)
+        params['logged_in'] = logged_in
         return t.render(params)
 
     def render(self, template, **kw):
-        self.write(self.render_str(template, **kw))
+        user_id = self.request.cookies.get('user_id')
+        logged_in = True if user_id else False
+        self.write(self.render_str(template, logged_in, **kw))
 
     def give_cookie(self, user_id):
         user_id = make_secure_val(str(user_id))
@@ -154,6 +157,15 @@ class Handler(webapp2.RequestHandler):
             'set-cookie',
             'user_id={user_id}; Path=/'.format(user_id=user_id)
             )
+
+
+class LogoutHandler(Handler):
+    def get(self):
+        self.response.headers.add_header(
+            'set-cookie',
+            'user_id=deleted; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT'
+            )
+        self.redirect('/blog')
 
 
 class NewPostHandler(Handler):
@@ -321,6 +333,19 @@ class GqlHandler(Handler):
 
         self.write(get_id('sprink'))
 
+        def write_blogs():
+            blogs = db.GqlQuery("""SELECT *
+                from Blogs
+                order by created desc
+                limit 20
+                """)
+
+            for blog in blogs:
+                self.write(blog.key().id())
+                self.write('<br>')
+
+        write_blogs()
+
         # self.write(
         #     checkName('bobo')
         #     )
@@ -342,6 +367,7 @@ app = webapp2.WSGIApplication([
     ('/blog/welcome', ThanksPageHandler),
     ('/blog/signup', SignupHandler),
     ('/blog/login', LoginHandler),
+    ('/blog/logout', LogoutHandler),
     # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
 ], debug=True)
