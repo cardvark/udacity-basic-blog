@@ -163,7 +163,7 @@ class LogoutHandler(Handler):
     def get(self):
         self.response.headers.add_header(
             'set-cookie',
-            'user_id=deleted; Path=/; Expires=Thu, 01-Jan-1970 00:00:00 GMT'
+            'user_id=; Path=/'
             )
         self.redirect('/blog')
 
