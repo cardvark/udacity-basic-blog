@@ -36,6 +36,7 @@ newpost_page = 'newpost.html'
 thanks_page = 'thanks-post.html'
 main_page = 'main-page.html'
 signup_page = 'signup.html'
+login_page = 'login.html'
 
 
 # check validity of input based on regex reqs.
@@ -104,14 +105,23 @@ def user_entry(username, password, email):
 
 
 # checks if name exists in Users.
-def user_exists(user):
+def user_h(user):
     q = db.GqlQuery("""SELECT *
         from Users
         where user_name = '{user}'
         """.format(user=user))
 
     if q.get():
-        return True
+        return q.get().pw
+
+
+def get_id(user):
+    q = db.GqlQuery("""SELECT __key__
+        from Users
+        where user_name = '{user}'
+        """.format(user=user))
+    if q.get():
+        return q.get().id()
 
 
 class Blogs(db.Model):
@@ -137,6 +147,13 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
+
+    def give_cookie(self, user_id):
+        user_id = make_secure_val(str(user_id))
+        self.response.headers.add_header(
+            'set-cookie',
+            'user_id={user_id}; Path=/'.format(user_id=user_id)
+            )
 
 
 class NewPostHandler(Handler):
@@ -233,7 +250,7 @@ class SignupHandler(Handler):
             'email': email
         }
 
-        if user_exists(username):
+        if user_h(username):
             params['username_error'] = "Username already taken."
             valid_input = False
 
@@ -253,18 +270,32 @@ class SignupHandler(Handler):
             valid_input = False
 
         if username and password and password_verify and valid_input:
-            base_user_id = user_entry(username, password, email)
-            user_id = make_secure_val(str(base_user_id))
-            self.response.headers.add_header(
-                'set-cookie',
-                'user_id={user_id}; Path=/'.format(user_id=user_id)
-                )
+            user_id = user_entry(username, password, email)
+            self.give_cookie(user_id)
             self.redirect('/blog/welcome')
         else:
             self.render(
                 signup_page,
                 **params
                 )
+
+
+class LoginHandler(Handler):
+    def get(self):
+        self.render(login_page)
+
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+
+        h = user_h(username)
+
+        if h and valid_pw(username, password, h):
+            user_id = get_id(username)
+            self.give_cookie(user_id)
+            self.redirect('/blog/welcome')
+        else:
+            self.render(login_page, login_error='Invalid login information.')
 
 
 class GqlHandler(Handler):
@@ -280,9 +311,19 @@ class GqlHandler(Handler):
             else:
                 "User not found"
 
-        self.write(
-            checkName('bobo')
-            )
+        def get_id(user):
+            q = db.GqlQuery("""SELECT __key__
+                from Users
+                where user_name = '{user}'
+                """.format(user=user))
+            k = q.get().id()
+            return k
+
+        self.write(get_id('sprink'))
+
+        # self.write(
+        #     checkName('bobo')
+        #     )
 
         # for item in q:
         #     self.write(item.pw)
@@ -300,6 +341,7 @@ app = webapp2.WSGIApplication([
     ('/blog/newpost', NewPostHandler),
     ('/blog/welcome', ThanksPageHandler),
     ('/blog/signup', SignupHandler),
+    ('/blog/login', LoginHandler),
     # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
 ], debug=True)

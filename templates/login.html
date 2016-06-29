@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+        <h1>Signup</h1>
+        <div class="container-fluid signup-container">
+            <form method="post">
+                <div class="row">
+                    <div class="col">Username</div>
+                    <div class="col"><input type="text" name="username"></div>
+                </div>
+                <div class="row">
+                    <div class="col">Password</div>
+                    <div class="col"><input type="password" name="password"></div>
+                    <div class="col error">{{login_error}}</div>
+                </div>
+                <br>
+                <input type="submit">
+            </form>
+        </div>
+
+{% endblock %}
