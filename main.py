@@ -165,7 +165,7 @@ class LogoutHandler(Handler):
             'set-cookie',
             'user_id=; Path=/'
             )
-        self.redirect('/blog')
+        self.redirect('/blog/signup')
 
 
 class NewPostHandler(Handler):
