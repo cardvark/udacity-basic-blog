@@ -49,18 +49,6 @@ def hash_str(s):
     return hmac.new(SECRET, s).hexdigest()
 
 
-# creates secure cookie string
-def make_secure_val(s):
-    return '{s}|{hash}'.format(s=s, hash=hash_str(s))
-
-
-# checks secure cookie string sent by user
-def check_secure_val(h):
-    val = h.split('|')[0]
-    if h == make_secure_val(val):
-        return val
-
-
 # creates random 5 letter string. Salt for hmac pw hashing
 def make_salt():
     output_str = ''
@@ -90,7 +78,7 @@ def valid_pw(name, pw, h):
         return True
 
 
-# creates new Users entity.  returns user_id for user cookie.
+# creates new Users entity.  returns db_id for user cookie.
 def user_entry(username, password, email):
     pw = make_pw_hash(username, password)
 
@@ -100,11 +88,11 @@ def user_entry(username, password, email):
         email=email
         )
     new_user.put()
-    user_id = new_user.key().id()
-    return user_id
+    db_id = new_user.key().id()
+    return db_id
 
 
-# checks if name exists in Users.
+# returns hashed pw for user
 def user_h(user):
     q = db.GqlQuery("""SELECT *
         from Users
@@ -113,15 +101,6 @@ def user_h(user):
 
     if q.get():
         return q.get().pw
-
-
-def get_id(user):
-    q = db.GqlQuery("""SELECT __key__
-        from Users
-        where user_name = '{user}'
-        """.format(user=user))
-    if q.get():
-        return q.get().id()
 
 
 class Blogs(db.Model):
@@ -151,12 +130,35 @@ class Handler(webapp2.RequestHandler):
         logged_in = True if user_id else False
         self.write(self.render_str(template, logged_in, **kw))
 
-    def give_cookie(self, user_id):
-        user_id = make_secure_val(str(user_id))
+    # creates secure cookie string
+    def make_cookie_id(self, s):
+        return '{s}|{hash}'.format(s=s, hash=hash_str(s))
+
+    # checks secure cookie string sent by user
+    def check_cookie_id(self, h):
+        val = h.split('|')[0]
+        if h == self.make_cookie_id(val):
+            return val
+
+    def give_cookie(self, db_id):
+        db_id = self.make_cookie_id(str(db_id))
         self.response.headers.add_header(
             'set-cookie',
-            'user_id={user_id}; Path=/'.format(user_id=user_id)
+            'db_id={db_id}; Path=/'.format(db_id=db_id)
             )
+
+    def username_from_cookie_id(self, cookie_id):
+        user = cookie_id.split('|')[0]
+        key = db.Key.from_path('Users', int(user))
+        return db.get(key).user_name
+
+    def db_id_from_username(self, username):
+        q = db.GqlQuery("""SELECT __key__
+            from Users
+            where user_name = '{username}'
+            """.format(username=username))
+        if q.get():
+            return q.get().id()
 
 
 class LogoutHandler(Handler):
@@ -204,10 +206,8 @@ class ThanksPageHandler(Handler):
         # checks user's cookie on this page.
         # if has user_id cookie and user_id is valid, says thanks.
         # pulls name from Users.
-        if user_id and check_secure_val(user_id):
-            user = user_id.split('|')[0]
-            key = db.Key.from_path('Users', int(user))
-            username = db.get(key).user_name
+        if user_id and self.check_cookie_id(user_id):
+            username = self.username_from_cookie_id(user_id)
             self.render(
                 thanks_page,
                 username=username,
@@ -282,8 +282,8 @@ class SignupHandler(Handler):
             valid_input = False
 
         if username and password and password_verify and valid_input:
-            user_id = user_entry(username, password, email)
-            self.give_cookie(user_id)
+            db_id = user_entry(username, password, email)
+            self.give_cookie(db_id)
             self.redirect('/blog/welcome')
         else:
             self.render(
@@ -303,7 +303,7 @@ class LoginHandler(Handler):
         h = user_h(username)
 
         if h and valid_pw(username, password, h):
-            user_id = get_id(username)
+            user_id = self.db_id_from_username(username)
             self.give_cookie(user_id)
             self.redirect('/blog/welcome')
         else:
@@ -312,27 +312,6 @@ class LoginHandler(Handler):
 
 class GqlHandler(Handler):
     def get(self):
-        def checkName(user):
-            q = db.GqlQuery("""SELECT *
-                from Users
-                where user_name = '{user}'
-                """.format(user=user))
-
-            if q.get():
-                return "Got him!"
-            else:
-                "User not found"
-
-        def get_id(user):
-            q = db.GqlQuery("""SELECT __key__
-                from Users
-                where user_name = '{user}'
-                """.format(user=user))
-            k = q.get().id()
-            return k
-
-        self.write(get_id('sprink'))
-
         def write_blogs():
             blogs = db.GqlQuery("""SELECT *
                 from Blogs
