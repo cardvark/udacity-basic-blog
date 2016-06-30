@@ -39,70 +39,6 @@ signup_page = 'signup.html'
 login_page = 'login.html'
 
 
-# check validity of input based on regex reqs.
-def valid_check(text_input, re_check):
-    return re_check.match(text_input)
-
-
-# hashes string; for cookies.  Uses 'SECRET' to obfuscate.
-def hash_str(s):
-    return hmac.new(SECRET, s).hexdigest()
-
-
-# creates random 5 letter string. Salt for hmac pw hashing
-def make_salt():
-    output_str = ''
-    for i in range(5):
-        output_str += random.choice(string.letters)
-
-    return output_str
-
-
-# pw hash with salt and pepper
-# salt saved with hashed pw.
-def make_pw_hash(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-
-    h = hashlib.sha256(PEPPER + name + pw + salt).hexdigest()
-    return '{hash_out}|{salt}'.format(
-        hash_out=h,
-        salt=salt
-        )
-
-
-def valid_pw(name, pw, h):
-    salt = h.split('|')[1]
-
-    if h == make_pw_hash(name, pw, salt):
-        return True
-
-
-# creates new Users entity.  returns db_id for user cookie.
-def user_entry(username, password, email):
-    pw = make_pw_hash(username, password)
-
-    new_user = Users(
-        user_name=username,
-        pw=pw,
-        email=email
-        )
-    new_user.put()
-    db_id = new_user.key().id()
-    return db_id
-
-
-# returns hashed pw for user
-def user_h(user):
-    q = db.GqlQuery("""SELECT *
-        from Users
-        where user_name = '{user}'
-        """.format(user=user))
-
-    if q.get():
-        return q.get().pw
-
-
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
@@ -116,23 +52,10 @@ class Users(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
 
 
-class Handler(webapp2.RequestHandler):
-    def write(self, *a, **kw):
-        self.response.out.write(*a, **kw)
-
-    def render_str(self, template, logged_in, **params):
-        t = jinja_env.get_template(template)
-        params['logged_in'] = logged_in
-        return t.render(params)
-
-    def render(self, template, **kw):
-        user_id = self.request.cookies.get('user_id')
-        logged_in = True if user_id else False
-        self.write(self.render_str(template, logged_in, **kw))
-
+class HelperFunctions():
     # creates secure cookie string
     def make_cookie_id(self, s):
-        return '{s}|{hash}'.format(s=s, hash=hash_str(s))
+        return '{s}|{hash}'.format(s=s, hash=self.hash_str(s))
 
     # checks secure cookie string sent by user
     def check_cookie_id(self, h):
@@ -144,7 +67,7 @@ class Handler(webapp2.RequestHandler):
         db_id = self.make_cookie_id(str(db_id))
         self.response.headers.add_header(
             'set-cookie',
-            'db_id={db_id}; Path=/'.format(db_id=db_id)
+            'user_id={db_id}; Path=/'.format(db_id=db_id)
             )
 
     def username_from_cookie_id(self, cookie_id):
@@ -159,6 +82,81 @@ class Handler(webapp2.RequestHandler):
             """.format(username=username))
         if q.get():
             return q.get().id()
+
+    def get_cookie_id(self):
+        return self.request.cookies.get('user_id')
+
+    # check validity of input based on regex reqs.
+    def valid_reg_check(self, text_input, re_check):
+        return re_check.match(text_input)
+
+    # hashes string; for cookies.  Uses 'SECRET' to obfuscate.
+    def hash_str(self, s):
+        return hmac.new(SECRET, s).hexdigest()
+
+    # creates random 5 letter string. Salt for hmac pw hashing
+    def make_salt(self):
+        output_str = ''
+        for i in range(5):
+            output_str += random.choice(string.letters)
+
+        return output_str
+
+    # pw hash with salt and pepper
+    # salt saved with hashed pw.
+    def make_pw_hash(self, name, pw, salt=None):
+        if not salt:
+            salt = self.make_salt()
+
+        h = hashlib.sha256(PEPPER + name + pw + salt).hexdigest()
+        return '{hash_out}|{salt}'.format(
+            hash_out=h,
+            salt=salt
+            )
+
+    def valid_pw(self, name, pw, h):
+        salt = h.split('|')[1]
+
+        if h == self.make_pw_hash(name, pw, salt):
+            return True
+
+    # creates new Users entity.  returns db_id for user cookie.
+    def user_entry(self, username, password, email):
+        pw = self.make_pw_hash(username, password)
+
+        new_user = Users(
+            user_name=username,
+            pw=pw,
+            email=email
+            )
+        new_user.put()
+        db_id = new_user.key().id()
+        return db_id
+
+    # returns hashed pw for user
+    def user_h(self, user):
+        q = db.GqlQuery("""SELECT *
+            from Users
+            where user_name = '{user}'
+            """.format(user=user))
+
+        if q.get():
+            return q.get().pw
+
+
+class Handler(webapp2.RequestHandler, HelperFunctions):
+    def write(self, *a, **kw):
+        self.response.out.write(*a, **kw)
+
+    def render_str(self, template, logged_in, **params):
+        t = jinja_env.get_template(template)
+        params['logged_in'] = logged_in
+        return t.render(params)
+
+    def render(self, template, **kw):
+        user_id = self.get_cookie_id()
+        logged_in = True if user_id else False
+        self.write(self.render_str(template, logged_in, **kw))
 
 
 class LogoutHandler(Handler):
@@ -201,7 +199,7 @@ class NewPostHandler(Handler):
 
 class ThanksPageHandler(Handler):
     def get(self):
-        user_id = self.request.cookies.get('user_id')
+        user_id = self.get_cookie_id()
 
         # checks user's cookie on this page.
         # if has user_id cookie and user_id is valid, says thanks.
@@ -262,27 +260,27 @@ class SignupHandler(Handler):
             'email': email
         }
 
-        if user_h(username):
+        if self.user_h(username):
             params['username_error'] = "Username already taken."
             valid_input = False
 
-        if not valid_check(username, user_re):
+        if not self.valid_reg_check(username, user_re):
             params['username_error'] = "Not a valid username."
             valid_input = False
 
-        if not valid_check(password, password_re):
+        if not self.valid_reg_check(password, password_re):
             params['password_error'] = "Not a valid password."
             valid_input = False
         elif password != password_verify:
             params['password_mismatch'] = "Passwords didn't match."
             valid_input = False
 
-        if email and not valid_check(email, email_re):
+        if email and not self.valid_reg_check(email, email_re):
             params['email_error'] = "Not a valid email"
             valid_input = False
 
         if username and password and password_verify and valid_input:
-            db_id = user_entry(username, password, email)
+            db_id = self.user_entry(username, password, email)
             self.give_cookie(db_id)
             self.redirect('/blog/welcome')
         else:
@@ -300,9 +298,9 @@ class LoginHandler(Handler):
         username = self.request.get('username')
         password = self.request.get('password')
 
-        h = user_h(username)
+        h = self.user_h(username)
 
-        if h and valid_pw(username, password, h):
+        if h and self.valid_pw(username, password, h):
             user_id = self.db_id_from_username(username)
             self.give_cookie(user_id)
             self.redirect('/blog/welcome')
