@@ -49,10 +49,6 @@ a:hover {
     color: black;
 }
 
-.new-post-span a:hover {
-    text-decoration: none;
-}
-
 .title-row {
     border-bottom: 3px solid #666;
 }
@@ -109,6 +105,12 @@ label {
   margin-left: auto;
   padding-left: 15px;
   padding-right: 15px;
+}
+
+.cancel-div {
+    border: 1px solid black;
+    max-width: 100px;
+    padding: 5px 10px 5px 10px;
 }
 
 div.signup-container div.row {

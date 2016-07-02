@@ -283,9 +283,22 @@ class PostEditHandler(Handler):
             self.redirect('/blog')
 
     def post(self, blog_id):
-        blog = Blogs.blog_by_id(blog_id)
-        blog.edit('My titler!', 'content, content, content!')
-        self.write('modified!')
+        title = self.request.get('subject')
+        content = self.request.get('content')
+
+        if title and content:
+            blog = Blogs.blog_by_id(blog_id)
+            blog.edit(title, content)
+            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+        else:
+            error = 'Need both title and content'
+            self.render(
+                edit_post_page,
+                blog={'title': '', 'content': ''},
+                blog_title=title,
+                blog_content=content,
+                error=error)
+
 
 
 class SignupHandler(Handler):
