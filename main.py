@@ -53,7 +53,6 @@ class Blogs(db.Model):
         blog = db.get(key)
         return blog
 
-    # @classmethod
     def edit(self, title, content):
         self.title = title
         self.content = content
@@ -181,6 +180,10 @@ class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         self.username = self.username_from_cookie_id(self.get_cookie_id())
 
+    def check_user_redirect(self, username):
+        if not username:
+            self.redirect('/blog/signup')
+
 
 class LogoutHandler(Handler):
     def get(self):
@@ -229,20 +232,12 @@ class NewPostHandler(Handler):
 
 class ThanksPageHandler(Handler):
     def get(self):
-        user_id = self.get_cookie_id()
-
-        # checks user's cookie on this page.
-        # if has user_id cookie and user_id is valid, says thanks.
-        # pulls name from Users.
-        if user_id and self.check_cookie_id(user_id):
-            username = self.username_from_cookie_id(user_id)
-            self.render(
-                thanks_page,
-                username=username,
-                redirect_main=True
-                )
-        else:
-            self.redirect('/blog/signup')
+        self.check_user_redirect(self.username)
+        self.render(
+            thanks_page,
+            username=self.username,
+            redirect_main=True
+            )
 
 
 class BlogMainHandler(Handler):
@@ -251,10 +246,14 @@ class BlogMainHandler(Handler):
             # Handles the /blog/#### case.
             # If digits passed in, checks if entity exists in database
             # Passes entity to blog_post_page template for a one-off page.
-            key = db.Key.from_path('Blogs', int(blog_id))
-            blog = db.get(key)
+            blog = Blogs.blog_by_id(blog_id)
             if blog:
-                self.render(blog_post_page, blog=blog)
+                self.render(
+                    blog_post_page,
+                    blog=blog,
+                    username=self.username,
+                    edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
+                    )
             else:
                 self.redirect('/blog')
 
@@ -275,10 +274,12 @@ class BlogMainHandler(Handler):
 
 class PostEditHandler(Handler):
     def get(self, blog_id):
-        key = db.Key.from_path('Blogs', int(blog_id))
-        self.blog = db.get(key)
-        if self.blog:
-            self.render(edit_post_page, blog=self.blog)
+        blog = Blogs.blog_by_id(blog_id)
+        if self.username != blog.author:
+            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+
+        if blog:
+            self.render(edit_post_page, blog=blog)
         else:
             self.redirect('/blog')
 
@@ -298,7 +299,6 @@ class PostEditHandler(Handler):
                 blog_title=title,
                 blog_content=content,
                 error=error)
-
 
 
 class SignupHandler(Handler):

@@ -2,7 +2,17 @@
 
 {% block content %}
 
-Edit button here.  last_modified info.
+<div class="row">
+    <div class="col-sm-6 last-modified">last_modified info.</div>
+    <div class="col-sm-6 edit-button">
+        {% if blog.author == username %}
+        <span>
+            <a href="{{edit_url}}">EDIT BUTTON!</a>
+        </span>
+        {% endif %}
+    </div>
+</div>
+<br>
 
 {% include "single-post.html" %}
 
