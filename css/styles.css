@@ -107,9 +107,9 @@ label {
   padding-right: 15px;
 }
 
-.cancel-div {
+.cancel-div span {
     border: 1px solid black;
-    max-width: 100px;
+    /*max-width: 100px;*/
     padding: 5px 10px 5px 10px;
 }
 

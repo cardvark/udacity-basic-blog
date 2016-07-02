@@ -181,8 +181,8 @@ class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         self.username = self.username_from_cookie_id(self.get_cookie_id())
 
-    def check_user_redirect(self, username):
-        if not username:
+    def check_user_redirect(self):
+        if not self.username:
             self.redirect('/blog/signup')
 
 
@@ -197,10 +197,8 @@ class LogoutHandler(Handler):
 
 class NewPostHandler(Handler):
     def get(self):
-        if self.username:
-            self.render(newpost_page)
-        else:
-            self.redirect('/blog/signup')
+        self.check_user_redirect()
+        self.render(newpost_page)
 
     def post(self):
         title = self.request.get('subject')
@@ -233,7 +231,7 @@ class NewPostHandler(Handler):
 
 class ThanksPageHandler(Handler):
     def get(self):
-        self.check_user_redirect(self.username)
+        self.check_user_redirect()
         self.render(
             thanks_page,
             username=self.username,
@@ -289,9 +287,9 @@ class PostEditHandler(Handler):
     def post(self, blog_id):
         title = self.request.get('subject')
         content = self.request.get('content')
+        blog = Blogs.blog_by_id(blog_id)
 
-        if title and content:
-            blog = Blogs.blog_by_id(blog_id)
+        if title and content and self.username == blog.author:
             blog.edit(title, content)
             self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
         else:
