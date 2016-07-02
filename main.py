@@ -4,6 +4,7 @@ import webapp2
 import os
 import jinja2
 import re
+import datetime as dt
 import random
 import string
 import hmac
@@ -248,10 +249,12 @@ class BlogMainHandler(Handler):
             # Passes entity to blog_post_page template for a one-off page.
             blog = Blogs.blog_by_id(blog_id)
             if blog:
+                time_diff = (blog.last_modified - blog.created).total_seconds()
                 self.render(
                     blog_post_page,
                     blog=blog,
                     username=self.username,
+                    time_diff=time_diff,
                     edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
                     )
             else:

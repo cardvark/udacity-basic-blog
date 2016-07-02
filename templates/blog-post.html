@@ -3,7 +3,11 @@
 {% block content %}
 
 <div class="row">
-    <div class="col-sm-6 last-modified">last_modified info.</div>
+    <div class="col-sm-6 last-modified">
+        {% if time_diff > 1 %}
+        Last modified: {{blog.last_modified.strftime('%b %d, %Y - %I:%M%p')}}
+        {% endif %}
+    </div>
     <div class="col-sm-6 edit-button">
         {% if blog.author == username %}
         <span>

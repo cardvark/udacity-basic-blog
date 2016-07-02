@@ -62,7 +62,7 @@ a:hover {
     font-weight: bold;
 }
 
-.blog-date {
+.blog-date, .last-modified {
     color: #999;
 }
 
