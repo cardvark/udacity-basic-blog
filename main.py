@@ -37,6 +37,7 @@ thanks_page = 'thanks-post.html'
 main_page = 'main-page.html'
 signup_page = 'signup.html'
 login_page = 'login.html'
+edit_post_page = 'edit-post.html'
 
 
 class Blogs(db.Model):
@@ -260,6 +261,20 @@ class BlogMainHandler(Handler):
             self.render(main_page, blogs=blogs)
 
 
+class PostEditHandler(Handler):
+
+    def get(self, blog_id):
+        key = db.Key.from_path('Blogs', int(blog_id))
+        self.blog = db.get(key)
+        if self.blog:
+            self.render(edit_post_page, blog=self.blog)
+        else:
+            self.redirect('/blog')
+
+    def post(self, blog_id):
+        self.write(blog_id)
+
+
 class SignupHandler(Handler):
     def get(self):
         self.render(signup_page)
@@ -363,5 +378,6 @@ app = webapp2.WSGIApplication([
     ('/blog/login', LoginHandler),
     ('/blog/logout', LogoutHandler),
     # ('/blog/gqlhandler', GqlHandler),
-    webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler)
+    webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler),
+    webapp2.Route(r'/blog/<blog_id:\d+>/edit', PostEditHandler)
 ], debug=True)
