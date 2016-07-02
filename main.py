@@ -42,8 +42,9 @@ login_page = 'login.html'
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
-    author = db.StringProperty(required=True)
+    author = db.StringProperty(default='Anonymous')
     created = db.DateTimeProperty(auto_now_add=True)
+    last_modified = db.DateTimeProperty(auto_now=True)
 
 
 class Users(db.Model):
@@ -53,58 +54,7 @@ class Users(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
 
 
-class HelperFunctions():
-    # creates secure cookie string
-    def make_cookie_id(self, s):
-        return '{s}|{hash}'.format(s=s, hash=self.hash_str(s))
-
-    # checks secure cookie string sent by user
-    def check_cookie_id(self, cookie_id):
-        if cookie_id:
-            val = cookie_id.split('|')[0]
-            if cookie_id == self.make_cookie_id(val):
-                return val
-
-    def give_cookie(self, db_id):
-        db_id = self.make_cookie_id(str(db_id))
-        self.response.headers.add_header(
-            'set-cookie',
-            'user_id={db_id}; Path=/'.format(db_id=db_id)
-            )
-
-    def username_from_cookie_id(self, cookie_id):
-        if self.check_cookie_id(cookie_id):
-            user = cookie_id.split('|')[0]
-            key = db.Key.from_path('Users', int(user))
-            return db.get(key).user_name
-
-    def db_id_from_username(self, username):
-        q = db.GqlQuery("""SELECT __key__
-            from Users
-            where user_name = '{username}'
-            """.format(username=username))
-        if q.get():
-            return q.get().id()
-
-    def get_cookie_id(self):
-        return self.request.cookies.get('user_id')
-
-    # check validity of input based on regex reqs.
-    def valid_reg_check(self, text_input, re_check):
-        return re_check.match(text_input)
-
-    # hashes string; for cookies.  Uses 'SECRET' to obfuscate.
-    def hash_str(self, s):
-        return hmac.new(SECRET, s).hexdigest()
-
-    # creates random 5 letter string. Salt for hmac pw hashing
-    def make_salt(self):
-        output_str = ''
-        for i in range(5):
-            output_str += random.choice(string.letters)
-
-        return output_str
-
+class UserFunctions():
     # pw hash with salt and pepper
     # salt saved with hashed pw.
     def make_pw_hash(self, name, pw, salt=None):
@@ -116,6 +66,14 @@ class HelperFunctions():
             hash_out=h,
             salt=salt
             )
+
+    # creates random 5 letter string. Salt for hmac pw hashing
+    def make_salt(self):
+        output_str = ''
+        for i in range(5):
+            output_str += random.choice(string.letters)
+
+        return output_str
 
     def valid_pw(self, name, pw, h):
         salt = h.split('|')[1]
@@ -146,8 +104,53 @@ class HelperFunctions():
         if q.get():
             return q.get().pw
 
+    def db_id_from_username(self, username):
+        q = db.GqlQuery("""SELECT __key__
+            from Users
+            where user_name = '{username}'
+            """.format(username=username))
+        if q.get():
+            return q.get().id()
 
-class Handler(webapp2.RequestHandler, HelperFunctions):
+
+class CookieFunctions():
+    # creates secure cookie string
+    def make_cookie_id(self, s):
+        return '{s}|{hash}'.format(s=s, hash=self.hash_str(s))
+
+    # checks secure cookie string sent by user
+    def check_cookie_id(self, cookie_id):
+        if cookie_id:
+            val = cookie_id.split('|')[0]
+            if cookie_id == self.make_cookie_id(val):
+                return val
+
+    def give_cookie(self, db_id):
+        db_id = self.make_cookie_id(str(db_id))
+        self.response.headers.add_header(
+            'set-cookie',
+            'user_id={db_id}; Path=/'.format(db_id=db_id)
+            )
+
+    def username_from_cookie_id(self, cookie_id):
+        if self.check_cookie_id(cookie_id):
+            user = cookie_id.split('|')[0]
+            key = db.Key.from_path('Users', int(user))
+            return db.get(key).user_name
+
+    def get_cookie_id(self):
+        return self.request.cookies.get('user_id')
+
+    # check validity of input based on regex reqs.
+    def valid_reg_check(self, text_input, re_check):
+        return re_check.match(text_input)
+
+    # hashes string; for cookies.  Uses 'SECRET' to obfuscate.
+    def hash_str(self, s):
+        return hmac.new(SECRET, s).hexdigest()
+
+
+class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
