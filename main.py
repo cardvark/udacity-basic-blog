@@ -47,6 +47,18 @@ class Blogs(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
     last_modified = db.DateTimeProperty(auto_now=True)
 
+    @classmethod
+    def blog_by_id(cls, blog_id):
+        key = db.Key.from_path('Blogs', int(blog_id))
+        blog = db.get(key)
+        return blog
+
+    # @classmethod
+    def edit(self, title, content):
+        self.title = title
+        self.content = content
+        self.put()
+
 
 class Users(db.Model):
     user_name = db.StringProperty(required=True)
@@ -202,7 +214,7 @@ class NewPostHandler(Handler):
                 )
             new_blog.put()
             blog_id = new_blog.key().id()
-            self.redirect('/blog/' + str(blog_id))
+            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
         else:
             # If user tries to submit blog w/ out title and content
             # Receives the following error.
@@ -262,7 +274,6 @@ class BlogMainHandler(Handler):
 
 
 class PostEditHandler(Handler):
-
     def get(self, blog_id):
         key = db.Key.from_path('Blogs', int(blog_id))
         self.blog = db.get(key)
@@ -272,7 +283,9 @@ class PostEditHandler(Handler):
             self.redirect('/blog')
 
     def post(self, blog_id):
-        self.write(blog_id)
+        blog = Blogs.blog_by_id(blog_id)
+        blog.edit('My titler!', 'content, content, content!')
+        self.write('modified!')
 
 
 class SignupHandler(Handler):
