@@ -20,15 +20,27 @@
 
 {% include "single-post.html" %}
 
-Add comments section here.
+<h3>comments</h3>
+
+<form action="" method="post">
+    <textarea class="comment-area" name="content" id="" cols="" rows="5"></textarea>
+    <div class="error">
+        {{error}}
+    </div>
+    <input type="submit">
+</form>
+<br>
+<br>
 <div class="row">
     <div class="col-sm-10">
-        My totally fascinating and useful post here.
+        My totally fascinating and useful comment here.
+        <br>
         <br>
         I have so much value to add.  I'm amazing.
     </div>
+</div>
 <div class="row">
-    <div class="col-sm-6">
+    <div class="col-sm-6 author-name">
         -- commentor name
     </div>
     <div class="col-sm-6">

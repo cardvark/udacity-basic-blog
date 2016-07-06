@@ -18,6 +18,7 @@
                 <div class="row">
                     <div class="col-sm-12 account-links">
                         {% if logged_in %}
+                            ({{username}})
                             <a href="/blog/logout">Logout</a>
                         {% else %}
                             <a href="/blog/signup">Signup</a> / <a href="/blog/login">Login</a>

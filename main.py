@@ -187,6 +187,7 @@ class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
     def render_str(self, template, logged_in, **params):
         t = jinja_env.get_template(template)
         params['logged_in'] = logged_in
+        params['username'] = self.username
         return t.render(params)
 
     def render(self, template, **kw):
@@ -288,6 +289,9 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                 """)
 
             self.render(main_page, blogs=blogs)
+
+    def post(self, blog_id):
+        pass
 
 
 class EditPostHandler(Handler, BlogBaseFunctions):
