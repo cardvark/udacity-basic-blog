@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container-fluid">
+    <h2>edit post</h2>
+    <form action="" method="post">
+        <div>
+            <label for="">
+                <div>Title</div>
+                <input class="title-input" type="text" name="subject" value="{{blog.title}}{{blog_title}}">
+            </label>
+        </div>
+        <br>
+        <div>
+            <label for="">
+                <div>Blog Content</div>
+                <textarea class="content-area" name="content" id="" cols="" rows="">{{blog.content}}{{blog_content}}</textarea>
+            </label>
+        </div>
+        <div class="error">
+            {{error}}
+        </div>
+        <input type="submit">
+        <br>
+        <br>
+        <div class="row">
+            <div class="col-sm-6">
+                <a href="/blog">
+                    <span class="cancel-div">
+                        Cancel Edit
+                    </span>
+                </a>
+            </div>
+            <div class="col-sm-6">
+                <a href="{{delete_url}}">
+                    <span class="delete-div">
+                        Delete Post
+                    </span>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
