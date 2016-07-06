@@ -8,10 +8,10 @@
         Last modified: {{blog.last_modified.strftime('%b %d, %Y - %I:%M%p')}}
         {% endif %}
     </div>
-    <div class="col-sm-6 edit-button">
+    <div class="col-sm-6">
         {% if blog.author == username %}
-        <span>
-            <a href="{{edit_url}}">EDIT BUTTON!</a>
+        <span class="edit-button">
+            <a href="{{edit_url}}">Edit</a>
         </span>
         {% endif %}
     </div>

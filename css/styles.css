@@ -49,6 +49,13 @@ a:hover {
     color: black;
 }
 
+.edit-button {
+    position: absolute;
+    right: 0;
+    border: solid 1px gray;
+    padding: 5px 10px 5px 10px;
+}
+
 .title-row {
     border-bottom: 3px solid #666;
 }
@@ -107,8 +114,8 @@ label {
   padding-right: 15px;
 }
 
-.cancel-div span {
-    border: 1px solid black;
+.cancel-div, .delete-div {
+    border: 1px solid gray;
     /*max-width: 100px;*/
     padding: 5px 10px 5px 10px;
 }

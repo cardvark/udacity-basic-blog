@@ -39,7 +39,7 @@ main_page = 'main-page.html'
 signup_page = 'signup.html'
 login_page = 'login.html'
 edit_post_page = 'edit-post.html'
-
+delete_post_page = 'delete-post.html'
 
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
@@ -163,6 +163,17 @@ class CookieFunctions():
         return hmac.new(SECRET, s).hexdigest()
 
 
+class BlogBaseFunctions():
+    def blog_redirect(self, blog_id):
+        self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+
+    def blog_author_check(self, blog, blog_id):
+        if not blog:
+            self.redirect('/blog')
+        elif self.username != blog.author:
+            self.blog_redirect(blog_id)
+
+
 class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
@@ -195,7 +206,7 @@ class LogoutHandler(Handler):
         self.redirect('/blog/signup')
 
 
-class NewPostHandler(Handler):
+class NewPostHandler(Handler, BlogBaseFunctions):
     def get(self):
         self.check_user_redirect()
         self.render(newpost_page)
@@ -216,7 +227,7 @@ class NewPostHandler(Handler):
                 )
             new_blog.put()
             blog_id = new_blog.key().id()
-            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+            self.blog_redirect(blog_id)
         else:
             # If user tries to submit blog w/ out title and content
             # Receives the following error.
@@ -239,7 +250,7 @@ class ThanksPageHandler(Handler):
             )
 
 
-class BlogMainHandler(Handler):
+class BlogMainHandler(Handler, BlogBaseFunctions):
     def get(self, blog_id=None):
         if blog_id:
             # Handles the /blog/#### case.
@@ -273,16 +284,16 @@ class BlogMainHandler(Handler):
             self.render(main_page, blogs=blogs)
 
 
-class PostEditHandler(Handler):
+class EditPostHandler(Handler, BlogBaseFunctions):
     def get(self, blog_id):
         blog = Blogs.blog_by_id(blog_id)
-        if self.username != blog.author:
-            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+        self.blog_author_check(blog, blog_id)
 
-        if blog:
-            self.render(edit_post_page, blog=blog)
-        else:
-            self.redirect('/blog')
+        self.render(
+            edit_post_page,
+            blog=blog,
+            delete_url='/blog/{blog_id}/delete'.format(blog_id=str(blog_id))
+            )
 
     def post(self, blog_id):
         title = self.request.get('subject')
@@ -291,7 +302,7 @@ class PostEditHandler(Handler):
 
         if title and content and self.username == blog.author:
             blog.edit(title, content)
-            self.redirect('/blog/{blog_id}'.format(blog_id=str(blog_id)))
+            self.blog_redirect(blog_id)
         else:
             error = 'Need both title and content'
             self.render(
@@ -300,6 +311,28 @@ class PostEditHandler(Handler):
                 blog_title=title,
                 blog_content=content,
                 error=error)
+
+
+class DeletePostHandler(Handler, BlogBaseFunctions):
+    def get(self, blog_id):
+        blog = Blogs.blog_by_id(blog_id)
+        self.blog_author_check(blog, blog_id)
+
+        self.render(
+            delete_post_page,
+            blog=blog
+            )
+
+    def post(self, blog_id):
+        blog = Blogs.blog_by_id(blog_id)
+        self.blog_author_check(blog, blog_id)
+
+        delete = self.request.get('delete')
+
+        if delete == 'Yes':
+            self.write('post deleted!')
+        else:
+            self.blog_redirect(blog_id)
 
 
 class SignupHandler(Handler):
@@ -406,5 +439,6 @@ app = webapp2.WSGIApplication([
     ('/blog/logout', LogoutHandler),
     # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler),
-    webapp2.Route(r'/blog/<blog_id:\d+>/edit', PostEditHandler)
+    webapp2.Route(r'/blog/<blog_id:\d+>/edit', EditPostHandler),
+    webapp2.Route(r'/blog/<blog_id:\d+>/delete', DeletePostHandler)
 ], debug=True)
