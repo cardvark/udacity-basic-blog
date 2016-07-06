@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from datastores import *
+
 import webapp2
 import os
 import jinja2
 import re
-import datetime as dt
 import random
 import string
 import hmac
@@ -66,68 +67,78 @@ class Blogs(db.Model):
         db.delete(key)
 
 
+# need class methods to:
+# - create Comments entity
+# - edit comment
+# - delete comment
+class Comments(db.Model):
+    blog_post = db.IntegerProperty(required=True)
+    content = db.TextProperty(required=True)
+    author = db.StringProperty(default='Anonymous')
+    created = db.DateTimeProperty(auto_now_add=True)
+    last_modified = db.DateTimeProperty(auto_now=True)
+
+
+# User functions
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+
+    h = hashlib.sha256(PEPPER + name + pw + salt).hexdigest()
+    return '{hash_out}|{salt}'.format(
+        hash_out=h,
+        salt=salt
+        )
+
+# creates random 5 letter string. Salt for hmac pw hashing
+def make_salt():
+    output_str = ''
+    for i in range(5):
+        output_str += random.choice(string.letters)
+
+    return output_str
+
+def valid_pw(name, pw, h):
+    salt = h.split('|')[1]
+
+    if h == make_pw_hash(name, pw, salt):
+        return True
+
+
 class Users(db.Model):
     user_name = db.StringProperty(required=True)
     pw = db.StringProperty(required=True)
     email = db.StringProperty()
     created = db.DateTimeProperty(auto_now_add=True)
 
-
-class UserFunctions():
-    # pw hash with salt and pepper
-    # salt saved with hashed pw.
-    def make_pw_hash(self, name, pw, salt=None):
-        if not salt:
-            salt = self.make_salt()
-
-        h = hashlib.sha256(PEPPER + name + pw + salt).hexdigest()
-        return '{hash_out}|{salt}'.format(
-            hash_out=h,
-            salt=salt
-            )
-
-    # creates random 5 letter string. Salt for hmac pw hashing
-    def make_salt(self):
-        output_str = ''
-        for i in range(5):
-            output_str += random.choice(string.letters)
-
-        return output_str
-
-    def valid_pw(self, name, pw, h):
-        salt = h.split('|')[1]
-
-        if h == self.make_pw_hash(name, pw, salt):
-            return True
-
-    # creates new Users entity.  returns db_id for user cookie.
-    def user_entry(self, username, password, email):
-        pw = self.make_pw_hash(username, password)
+    @classmethod
+    def entry_and_id(cls, user_name, password, email):
+        pw = make_pw_hash(user_name, password)
 
         new_user = Users(
-            user_name=username,
+            user_name=user_name,
             pw=pw,
             email=email
             )
         new_user.put()
-        db_id = new_user.key().id()
-        return db_id
+        return new_user.key().id()
 
-    # returns hashed pw for user
-    def user_h(self, user):
+    @classmethod
+    def user_hashed_pw(cls, user_name):
         q = db.GqlQuery("""SELECT *
             from Users
-            where user_name = '{user}'
-            """.format(user=user))
+            where user_name = '{name}'
+            """.format(name=user_name))
 
         if q.get():
             return q.get().pw
 
-    def db_id_from_username(self, username):
+    @classmethod
+    def db_id_from_username(cls, user_name):
         q = db.GqlQuery("""SELECT __key__
             from Users
-            where user_name = '{username}'
-            """.format(username=username))
+            where user_name = '{name}'
+            """.format(name=user_name))
         if q.get():
             return q.get().id()
 
@@ -180,14 +191,15 @@ class BlogBaseFunctions():
             self.blog_redirect(blog_id)
 
 
-class Handler(webapp2.RequestHandler, CookieFunctions, UserFunctions):
+class Handler(webapp2.RequestHandler, CookieFunctions):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
     def render_str(self, template, logged_in, **params):
         t = jinja_env.get_template(template)
         params['logged_in'] = logged_in
-        params['username'] = self.username
+        if self.username:
+            params['username'] = self.username
         return t.render(params)
 
     def render(self, template, **kw):
@@ -348,7 +360,7 @@ class DeletePostHandler(Handler, BlogBaseFunctions):
 
 class SignupHandler(Handler):
     def get(self):
-        self.render(signup_page)
+        self.render(signup_page, username="")
 
     def post(self):
         username = self.request.get('username')
@@ -363,7 +375,7 @@ class SignupHandler(Handler):
             'email': email
         }
 
-        if self.user_h(username):
+        if Users.user_hashed_pw(username):
             params['username_error'] = "Username already taken."
             valid_input = False
 
@@ -383,7 +395,7 @@ class SignupHandler(Handler):
             valid_input = False
 
         if username and password and password_verify and valid_input:
-            db_id = self.user_entry(username, password, email)
+            db_id = Users.entry_and_id(username, password, email)
             self.give_cookie(db_id)
             self.redirect('/blog/welcome')
         else:
@@ -401,10 +413,10 @@ class LoginHandler(Handler):
         username = self.request.get('username')
         password = self.request.get('password')
 
-        h = self.user_h(username)
+        h = Users.user_hashed_pw(username)
 
-        if h and self.valid_pw(username, password, h):
-            user_id = self.db_id_from_username(username)
+        if h and valid_pw(username, password, h):
+            user_id = Users.db_id_from_username(username)
             self.give_cookie(user_id)
             self.redirect('/blog/welcome')
         else:
