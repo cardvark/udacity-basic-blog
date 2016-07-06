@@ -41,6 +41,7 @@ login_page = 'login.html'
 edit_post_page = 'edit-post.html'
 delete_post_page = 'delete-post.html'
 
+
 class Blogs(db.Model):
     title = db.StringProperty(required=True)
     content = db.TextProperty(required=True)
@@ -58,6 +59,11 @@ class Blogs(db.Model):
         self.title = title
         self.content = content
         self.put()
+
+    @classmethod
+    def delete_blog(cls, blog_id):
+        key = db.Key.from_path('Blogs', int(blog_id))
+        db.delete(key)
 
 
 class Users(db.Model):
@@ -330,7 +336,8 @@ class DeletePostHandler(Handler, BlogBaseFunctions):
         delete = self.request.get('delete')
 
         if delete == 'Yes':
-            self.write('post deleted!')
+            Blogs.delete_blog(blog_id)
+            self.redirect('/blog')
         else:
             self.blog_redirect(blog_id)
 
