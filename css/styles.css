@@ -112,6 +112,11 @@ label {
     color: red;
 }
 
+.comment-row {
+    padding-top: 10px;
+    border-top: 1px solid gray;
+}
+
 .signup-container {
   margin-right: auto;
   margin-left: auto;

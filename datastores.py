@@ -36,16 +36,7 @@ class Blogs(db.Model):
         self.content = content
         self.put()
 
-    @classmethod
-    def delete_blog(cls, blog_id):
-        key = db.Key.from_path('Blogs', int(blog_id))
-        db.delete(key)
 
-
-# need class methods to:
-# - create Comments entity
-# - edit comment
-# - delete comment
 class Comments(db.Model):
     blog_post = db.IntegerProperty(required=True)
     content = db.TextProperty(required=True)
@@ -55,7 +46,7 @@ class Comments(db.Model):
 
     @classmethod
     def entry_and_id(cls, blog_id, content, author):
-        new_comment = Blogs(
+        new_comment = Comments(
             blog_post=blog_id,
             content=content,
             author=author
@@ -73,7 +64,27 @@ class Comments(db.Model):
         self.content = content
         self.put()
 
+    @classmethod
+    def delete_blog(cls, blog_id):
+        key = db.Key.from_path('Blogs', int(blog_id))
+        db.delete(key)
 
+    @classmethod
+    def get_comments(cls, blog_id, count):
+        comments_list = db.GqlQuery("""SELECT *
+            from Comments
+            where blog_post = {blog_id}
+            order by created desc
+            limit {count}
+            """.format(
+            blog_id=blog_id,
+            count=count
+            ))
+
+        return comments_list
+
+
+# User functions
 def make_pw_hash(name, pw, salt=None):
     if not salt:
         salt = make_salt()

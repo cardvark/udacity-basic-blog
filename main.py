@@ -7,6 +7,7 @@ import os
 import jinja2
 import re
 import hmac
+import time
 from google.appengine.ext import db
 
 # Setting up jinja templates file path
@@ -139,6 +140,7 @@ class NewPostHandler(Handler, BlogBaseFunctions):
                 content,
                 self.username
                 )
+            time.sleep(1)
             self.blog_redirect(blog_id)
         else:
             # If user tries to submit blog w/ out title and content
@@ -169,12 +171,14 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
             # If digits passed in, checks if entity exists in database
             # Passes entity to blog_post_page template for a one-off page.
             blog = Blogs.blog_by_id(blog_id)
+            comments_list = Comments.get_comments(int(blog_id), 20)
+
             if blog:
                 time_diff = (blog.last_modified - blog.created).total_seconds()
                 self.render(
                     blog_post_page,
                     blog=blog,
-                    username=self.username,
+                    comments_list=comments_list,
                     time_diff=time_diff,
                     edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
                     )
@@ -196,7 +200,37 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
             self.render(main_page, blogs=blogs)
 
     def post(self, blog_id):
-        pass
+        blog = Blogs.blog_by_id(blog_id)
+        comments_list = Comments.get_comments(int(blog_id), 20)
+        content = self.request.get('comment-content')
+        valid_comment = True
+
+        error = ''
+
+        if not self.username:
+            error = 'Must be logged in to comment'
+            valid_comment = False
+        elif not content:
+            error = 'Must enter some text'
+            valid_comment = False
+
+        if valid_comment:
+            Comments.entry_and_id(
+                int(blog_id),
+                content,
+                self.username
+                )
+            time.sleep(1)
+
+        time_diff = (blog.last_modified - blog.created).total_seconds()
+        self.render(
+            blog_post_page,
+            blog=blog,
+            time_diff=time_diff,
+            comments_list=comments_list,
+            edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id),
+            error=error
+            )
 
 
 class EditPostHandler(Handler, BlogBaseFunctions):
@@ -245,7 +279,7 @@ class DeletePostHandler(Handler, BlogBaseFunctions):
         delete = self.request.get('delete')
 
         if delete == 'Yes':
-            Blogs.delete_blog(blog_id)
+            blog.delete()
             self.redirect('/blog')
         else:
             self.blog_redirect(blog_id)
