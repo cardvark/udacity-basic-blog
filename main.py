@@ -165,13 +165,23 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                 order by created desc
                 limit 20
                 """)
+            vote_dict = {}
+
+            # NOTE:
+            # considering creating dict of vote counts for each blog.
+            # still figuring out how to handle capturing Likes.
+            for blog in blogs:
+                pass
 
             self.render(main_page, blogs=blogs)
 
     # Only comments need post handling right now.
     # therefore, assumption is that this is a specific blog page.
-    def post(self, blog_id):
-        blog = Blogs.blog_by_id(blog_id)
+    def post(self, blog_id=None):
+        if blog_id:
+            blog = Blogs.blog_by_id(blog_id)
+        else:
+            blog = None
 
         if not blog:
             self.redirect('/blog')

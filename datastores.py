@@ -79,10 +79,40 @@ class Comments(db.Model):
             """.format(
             blog_id=blog_id,
             count=count
-            ))
+            )
+        )
 
         return comments_list
 
+
+# Need count method based on blog_id
+# Need to check if author has or hasn't voted on the blog.
+class BlogVotes(db.Model):
+    author = db.StringProperty(required=True)
+    blog_id = db.IntegerProperty(required=True)
+    vote = db.IntegerProperty(default=1)
+
+    @classmethod
+    def vote_entry(cls, author, blog_id):
+        new_vote = BlogVotes(
+            author=author,
+            blog_id=blog_id
+            )
+
+        new_vote.put()
+        return new_vote.key().id()
+
+    @classmethod
+    def vote_count(cls, blog_id):
+        count = db.GqlQuery("""SELECT sum(vote)
+            from BlogVotes
+            where blog_id = {blog_id}
+            """.format(
+            blog_id=blog_id
+            )
+        )
+
+        return count
 
 # User functions
 def make_pw_hash(name, pw, salt=None):
