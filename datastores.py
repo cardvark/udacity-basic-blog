@@ -102,9 +102,25 @@ class BlogVotes(db.Model):
         new_vote.put()
         return new_vote.key().id()
 
+    # @classmethod
+    # def vote_count(cls, blog_id):
+    #     votes = BlogVotes.all()
+    #     votes.filter("blog_id =", blog_id)
+
+    #     count_val = 0
+
+    #     for item in votes:
+    #         count_val += item.vote
+
+    #     return count_val
+
+    # @classmethod
+    # def speak_up(cls):
+    #     print "whoof"
+
     @classmethod
     def vote_count(cls, blog_id):
-        count = db.GqlQuery("""SELECT sum(vote)
+        count_list = db.GqlQuery("""SELECT *
             from BlogVotes
             where blog_id = {blog_id}
             """.format(
@@ -112,7 +128,13 @@ class BlogVotes(db.Model):
             )
         )
 
-        return count
+        count_val = 0
+
+        for item in count_list:
+            count_val += item.vote
+
+        return count_val
+
 
 # User functions
 def make_pw_hash(name, pw, salt=None):
