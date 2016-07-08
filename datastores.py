@@ -71,18 +71,13 @@ class Comments(db.Model):
 
     @classmethod
     def comment_by_id(cls, comment_id):
-        key = db.Key.from_path('Blogs', int(comment_id))
+        key = db.Key.from_path('Comments', int(comment_id))
         comment = db.get(key)
         return comment
 
     def edit(self, content):
         self.content = content
         self.put()
-
-    @classmethod
-    def delete_blog(cls, blog_id):
-        key = db.Key.from_path('Blogs', int(blog_id))
-        db.delete(key)
 
     @classmethod
     def get_comments(cls, blog_id, count):
