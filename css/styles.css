@@ -108,7 +108,7 @@ label {
     height: 75px;
 }
 
-.error {
+.error, .like_error {
     color: red;
 }
 

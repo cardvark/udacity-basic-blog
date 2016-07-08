@@ -16,6 +16,21 @@ class Blogs(db.Model):
     last_modified = db.DateTimeProperty(auto_now=True)
 
     @classmethod
+    def get_blogs(cls, limit, offset=0):
+        blogs = db.GqlQuery("""SELECT *
+            from Blogs
+            order by created desc
+            limit {limit_num}
+            offset {offset_num}
+            """.format(
+            limit_num=limit,
+            offset_num=offset
+            )
+        )
+
+        return blogs
+
+    @classmethod
     def entry_and_id(cls, title, content, user_name):
         new_blog = Blogs(
             title=title,
@@ -102,21 +117,11 @@ class BlogVotes(db.Model):
         new_vote.put()
         return new_vote.key().id()
 
-    # @classmethod
-    # def vote_count(cls, blog_id):
-    #     votes = BlogVotes.all()
-    #     votes.filter("blog_id =", blog_id)
+    @classmethod
+    def vote_check(cls, author, blog_id):
+        vote = BlogVotes.all().filter("author =", author).filter("blog_id =", blog_id)
 
-    #     count_val = 0
-
-    #     for item in votes:
-    #         count_val += item.vote
-
-    #     return count_val
-
-    # @classmethod
-    # def speak_up(cls):
-    #     print "whoof"
+        return vote
 
     @classmethod
     def vote_count(cls, blog_id):

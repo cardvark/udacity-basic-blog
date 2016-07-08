@@ -134,46 +134,67 @@ class BlogBaseFunctions():
 
 
 class BlogMainHandler(Handler, BlogBaseFunctions):
+
+    def build_vote_dict(self, blog_iterable):
+        vote_dict = {}
+
+        for blog in blog_iterable:
+            blog_id = blog.key().id()
+            liked = BlogVotes.vote_check(self.username, blog_id).get()
+
+            vote_dict[blog.key().id()] = [
+                BlogVotes.vote_count(blog_id),
+                liked
+            ]
+
+        return vote_dict
+
+    def get_all_blogs_page(self, like_error=None):
+        # if url is simply /blog, displays main_page
+        # queries entire list of entities from Blogs
+        # passes to main_page template, which will iterate over the list.
+
+        blogs = Blogs.get_blogs(20)
+
+        vote_dict = self.build_vote_dict(blogs)
+
+        self.render(
+            main_page,
+            blogs=blogs,
+            vote_dict=vote_dict,
+            like_error=like_error
+        )
+
+    def get_single_blog_page(self, blog_id):
+        blog = Blogs.blog_by_id(blog_id)
+        comments_list = Comments.get_comments(int(blog_id), 20)
+
+        # handles case of incorrect blog_id in url.
+        if not blog:
+            self.redirect('/blog')
+            return
+
+        # put [blog] into a list to work with build_vote_dict
+        vote_dict = self.build_vote_dict([blog])
+
+        time_diff = (blog.last_modified - blog.created).total_seconds()
+        self.render(
+            blog_post_page,
+            blog=blog,
+            vote_dict=vote_dict,
+            comments_list=comments_list,
+            time_diff=time_diff,
+            edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
+            )
+
     def get(self, blog_id=None):
         if blog_id:
             # Handles the /blog/#### case.
             # If digits passed in, checks if entity exists in database
             # Passes entity to blog_post_page template for a one-off page.
-            blog = Blogs.blog_by_id(blog_id)
-            comments_list = Comments.get_comments(int(blog_id), 20)
-
-            # handles case of incorrect blog_id in url.
-            if not blog:
-                self.redirect('/blog')
-                return
-
-            time_diff = (blog.last_modified - blog.created).total_seconds()
-            self.render(
-                blog_post_page,
-                blog=blog,
-                comments_list=comments_list,
-                time_diff=time_diff,
-                edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
-                )
-
+            self.get_single_blog_page(blog_id)
         else:
-            # if url is simply /blog, displays main_page
-            # queries entire list of entities from Blogs
-            # passes to main_page template, which will iterate over the list.
-            blogs = db.GqlQuery("""SELECT *
-                from Blogs
-                order by created desc
-                limit 20
-                """)
-            vote_dict = {}
-
-            # NOTE:
-            # considering creating dict of vote counts for each blog.
-            # still figuring out how to handle capturing Likes.
-            for blog in blogs:
-                pass
-
-            self.render(main_page, blogs=blogs)
+            self.get_all_blogs_page()
 
     # Only comments need post handling right now.
     # therefore, assumption is that this is a specific blog page.
@@ -183,38 +204,63 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
         else:
             blog = None
 
+        like_error = None
+        like = self.request.get('like')
+        unlike = self.request.get('unlike')
+        comment_submit = self.request.get('comment-submit')
+
+        if like:
+            like_error = []
+            like_error.append(int(like))
+            vote = BlogVotes.vote_check(self.username, int(like))
+            if vote.get():
+                like_error.append("Can't vote more than once!")
+            elif self.username != Blogs.blog_by_id(like).author:
+                BlogVotes.vote_entry(self.username, int(like))
+                time.sleep(1)
+            else:
+                like_error.append("Can't vote on your own post!")
+        elif unlike:
+            vote = BlogVotes.vote_check(self.username, int(unlike))
+            vote.get().delete()
+            time.sleep(1)
+
         if not blog:
-            self.redirect('/blog')
+            self.get_all_blogs_page(like_error)
             return
 
+        vote_dict = self.build_vote_dict([blog])
         comments_list = Comments.get_comments(int(blog_id), 20)
         content = self.request.get('comment-content')
         valid_comment = True
 
         error = ''
 
-        if not self.username:
-            error = 'Must be logged in to comment'
-            valid_comment = False
-        elif not content:
-            error = 'Must enter some text'
-            valid_comment = False
+        if comment_submit:
+            if not self.username:
+                error = 'Must be logged in to comment'
+                valid_comment = False
+            elif not content:
+                error = 'Must enter some text'
+                valid_comment = False
 
-        if valid_comment:
-            Comments.entry_and_id(
-                int(blog_id),
-                content,
-                self.username
-                )
-            time.sleep(1)
+            if valid_comment:
+                Comments.entry_and_id(
+                    int(blog_id),
+                    content,
+                    self.username
+                    )
+                time.sleep(1)
 
         time_diff = (blog.last_modified - blog.created).total_seconds()
         self.render(
             blog_post_page,
             blog=blog,
+            vote_dict=vote_dict,
             time_diff=time_diff,
             comments_list=comments_list,
             edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id),
+            like_error=like_error,
             error=error
             )
 
