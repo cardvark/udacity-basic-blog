@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h3>edit comment</h3>
+
+<form action="" method="post">
+    <textarea class="comment-area" name="comment-content" id="" cols="" rows="5">{{comment.content}}</textarea>
+    <div class="error">
+        {{error}}
+    </div>
+    <input type="submit" name="comment-submit">
+</form>
+
+{% endblock %}
