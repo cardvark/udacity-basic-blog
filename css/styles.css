@@ -112,6 +112,10 @@ label {
     color: red;
 }
 
+.comment-content {
+    white-space: pre-wrap;
+}
+
 .comment-row {
     padding-top: 10px;
     padding-bottom: 10px;
