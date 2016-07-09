@@ -43,11 +43,11 @@
     <div class="col-sm-6">
         {% if comment.author == username %}
         <span>
-            Edit
+            <a href="/blog/{{comment.key().id()}}/cmt-edt">Edit</a>
         </span>
         /
         <span>
-            Delete
+            <a href="/blog/{{comment.key().id()}}/cmt-del">Delete</a>
         </span>
         {% endif %}
     </div>

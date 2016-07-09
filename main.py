@@ -38,6 +38,7 @@ login_page = 'login.html'
 edit_post_page = 'edit-post.html'
 delete_post_page = 'delete-post.html'
 delete_comment_page = 'delete-comment.html'
+edit_comment_page = 'edit-comment.html'
 
 
 # Generation, validation, and other cookie ID functions.
@@ -82,18 +83,17 @@ class Handler(webapp2.RequestHandler, CookieFunctions):
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
-    def render_str(self, template, logged_in, **params):
+    # always passes username to all pages
+    def render_str(self, template, **params):
         t = jinja_env.get_template(template)
-        params['logged_in'] = logged_in
-        if self.username:
-            params['username'] = self.username
+        params['username'] = self.username
         return t.render(params)
 
     def render(self, template, **kw):
-        user_id = self.get_cookie_id()
-        logged_in = True if user_id else False
-        self.write(self.render_str(template, logged_in, **kw))
+        self.write(self.render_str(template, **kw))
 
+    # all pages will always have self.username
+    # based on user's cookie_id
     def initialize(self, *a, **kw):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         self.username = self.username_from_cookie_id(self.get_cookie_id())
@@ -150,12 +150,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
         return vote_dict
 
     def get_all_blogs_page(self, like_error=None):
-        # if url is simply /blog, displays main_page
-        # queries entire list of entities from Blogs
-        # passes to main_page template, which will iterate over the list.
-
         blogs = Blogs.get_blogs(20)
-
         vote_dict = self.build_vote_dict(blogs)
 
         self.render(
@@ -207,6 +202,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
         unlike = self.request.get('unlike')
         comment_submit = self.request.get('comment-submit')
 
+        # first checks if like/liked button is submitted.
         if like:
             like_error = [int(like)]
             if not self.username:
@@ -214,8 +210,11 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
             vote = BlogVotes.vote_check(self.username, int(like))
             if vote.get():
                 like_error.append("Can't vote more than once!")
+            # this elif is the success case.
             elif self.username != Blogs.blog_by_id(like).author:
                 BlogVotes.vote_entry(self.username, int(like))
+                # added a 1 second sleep delay
+                # to allow time for datastore to update.
                 time.sleep(1)
             else:
                 like_error.append("Can't vote on your own post!")
@@ -225,7 +224,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                 vote.get().delete()
             time.sleep(1)
 
-        # Handles /blog page.
+        # Handles /blog page.  Causes reload at this point.
         if not blog:
             self.get_all_blogs_page(like_error)
             return
@@ -254,6 +253,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                     )
                 time.sleep(1)
 
+        # fully re-renders the blog post page.
         time_diff = (blog.last_modified - blog.created).total_seconds()
         self.render(
             blog_post_page,
@@ -282,14 +282,9 @@ class NewPostHandler(Handler, BlogBaseFunctions):
                 content,
                 self.username
                 )
-            # Note - added a 1 second sleep delay
-            # to allow time for datastore to update.
             time.sleep(1)
             self.blog_redirect(blog_id)
         else:
-            # If user tries to submit blog w/ out title and content
-            # Receives the following error.
-            # Use input is preserved in the fields.
             error = 'Need both title and content'
             self.render(
                 newpost_page,
@@ -353,12 +348,67 @@ class DeletePostHandler(Handler, BlogBaseFunctions):
 class DeleteCommentHandler(Handler, BlogBaseFunctions):
     def get(self, comment_id):
         comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
         blog = Blogs.blog_by_id(comment.blog_post)
         self.render(
             delete_comment_page,
             comment=comment,
             blog=blog
             )
+
+    def post(self, comment_id):
+        comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
+        delete = self.request.get('delete')
+
+        if delete == 'Yes':
+            comment.delete()
+            time.sleep(1)
+
+        self.blog_redirect(comment.blog_post)
+
+
+class EditCommentHandler(Handler, BlogBaseFunctions):
+    def get(self, comment_id):
+        comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
+        self.render(
+            edit_comment_page,
+            comment=comment
+            )
+
+    def post(self, comment_id):
+        comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
+        comment_content = self.request.get('comment-content')
+
+        if not comment_content:
+            error = 'Must enter some text'
+            self.render(
+                edit_comment_page,
+                comment=comment,
+                error=error
+                )
+        else:
+            comment.edit(comment_content)
+            time.sleep(1)
+            self.blog_redirect(comment.blog_post)
 
 
 class SignupHandler(Handler):
@@ -424,30 +474,6 @@ class LoginHandler(Handler):
             self.render(login_page, login_error='Invalid login information.')
 
 
-class GqlHandler(Handler):
-    def get(self):
-        def write_blogs():
-            blogs = db.GqlQuery("""SELECT *
-                from Blogs
-                order by created desc
-                limit 20
-                """)
-
-            for blog in blogs:
-                self.write(blog.key().id())
-                self.write('<br>')
-
-        write_blogs()
-
-        # self.write(
-        #     checkName('bobo')
-        #     )
-
-        # for item in q:
-        #     self.write(item.pw)
-        #     self.write('<br>')
-
-
 class MainHandler(Handler):
     def get(self):
         self.redirect('/blog')
@@ -461,9 +487,9 @@ app = webapp2.WSGIApplication([
     ('/blog/signup', SignupHandler),
     ('/blog/login', LoginHandler),
     ('/blog/logout', LogoutHandler),
-    # ('/blog/gqlhandler', GqlHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>', BlogMainHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>/edit', EditPostHandler),
     webapp2.Route(r'/blog/<blog_id:\d+>/delete', DeletePostHandler),
-    webapp2.Route(r'/blog/<comment_id:\d+>/del', DeleteCommentHandler)
+    webapp2.Route(r'/blog/<comment_id:\d+>/cmt-del', DeleteCommentHandler),
+    webapp2.Route(r'/blog/<comment_id:\d+>/cmt-edt', EditCommentHandler)
 ], debug=True)
