@@ -424,7 +424,7 @@ class SignupHandler(Handler):
         valid_input = True
 
         params = {
-            'username': username,
+            'user': username,
             'email': email
         }
 
