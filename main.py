@@ -204,11 +204,11 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
 
         # first checks if like/liked button is submitted.
         if like:
+            vote = BlogVotes.vote_check(self.username, int(like))
             like_error = [int(like)]
             if not self.username:
                 like_error.append('Must be logged in to vote.')
-            vote = BlogVotes.vote_check(self.username, int(like))
-            if vote.get():
+            elif vote.get():
                 like_error.append("Can't vote more than once!")
             # this elif is the success case.
             elif self.username != Blogs.blog_by_id(like).author:
