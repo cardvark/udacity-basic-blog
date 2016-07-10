@@ -27,7 +27,6 @@ class Blogs(db.Model):
             offset_num=offset
             )
         )
-
         return blogs
 
     @classmethod
@@ -91,12 +90,9 @@ class Comments(db.Model):
             count=count
             )
         )
-
         return comments_list
 
 
-# Need count method based on blog_id
-# Need to check if author has or hasn't voted on the blog.
 class BlogVotes(db.Model):
     author = db.StringProperty(required=True)
     blog_id = db.IntegerProperty(required=True)
@@ -115,7 +111,6 @@ class BlogVotes(db.Model):
     @classmethod
     def vote_check(cls, author, blog_id):
         vote = BlogVotes.all().filter("author =", author).filter("blog_id =", blog_id)
-
         return vote
 
     @classmethod

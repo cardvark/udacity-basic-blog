@@ -9,6 +9,9 @@
         {% endif %}
     </div>
     <div class="col-sm-6">
+        <!-- Hides "edit" link if user isn't logged in and the author. -->
+        <!-- bypasses issue of users trying to edit other people's posts. -->
+        <!-- add'l edge case handling in main.py -->
         {% if blog.author == username %}
         <a href="{{edit_url}}">
             <span class="edit-button">
@@ -41,6 +44,8 @@
 <div class="row">
     <div class="col-sm-6 author-name">-- {{comment.author}}</div>
     <div class="col-sm-6">
+        <!-- Same as edit link for the post, but for comments. -->
+        <!-- only comment authors will see the edit / delete links -->
         {% if comment.author == username %}
         <span>
             <a href="/blog/{{comment.key().id()}}/cmt-edt">Edit</a>

@@ -28,7 +28,6 @@ SECRET = 'secretforcookies'
 
 
 # jinja templates, located in /templates
-front_page = 'front.html'
 blog_post_page = 'blog-post.html'
 newpost_page = 'newpost.html'
 thanks_page = 'thanks-post.html'
@@ -134,6 +133,7 @@ class BlogBaseFunctions():
             self.blog_redirect(blog_id)
 
 
+# main /blog page and individual /blog/#### pages.
 class BlogMainHandler(Handler, BlogBaseFunctions):
     def build_vote_dict(self, blog_iterable):
         vote_dict = {}
@@ -160,7 +160,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
             like_error=like_error
         )
 
-    def get_single_blog_page(self, blog_id):
+    def get_single_blog_page(self, blog_id, error='', like_error=''):
         blog = Blogs.blog_by_id(blog_id)
         comments_list = Comments.get_comments(int(blog_id), 20)
 
@@ -179,30 +179,35 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
             vote_dict=vote_dict,
             comments_list=comments_list,
             time_diff=time_diff,
-            edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id)
+            edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id),
+            error=error,
+            like_error=like_error
             )
 
     def get(self, blog_id=None):
         if blog_id:
             # Handles the /blog/#### case.
-            # If digits passed in, checks if entity exists in database
-            # Passes entity to blog_post_page template for a one-off page.
             self.get_single_blog_page(blog_id)
         else:
             self.get_all_blogs_page()
 
+    # Note - must handle both /blog and /blog/#### cases
+    # as users can submit a "like" on a blog post on the /blog main page.
     def post(self, blog_id=None):
         if blog_id:
             blog = Blogs.blog_by_id(blog_id)
         else:
             blog = None
 
+        # like_error default None.
+        # will be list, with blog_id and actual error message as items
+        # template checks if blog_id matches, then displays error.
         like_error = None
         like = self.request.get('like')
         unlike = self.request.get('unlike')
         comment_submit = self.request.get('comment-submit')
 
-        # first checks if like/liked button is submitted.
+        # first checks if like/liked is posted by user.
         if like:
             vote = BlogVotes.vote_check(self.username, int(like))
             like_error = [int(like)]
@@ -224,19 +229,18 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                 vote.get().delete()
             time.sleep(1)
 
-        # Handles /blog page.  Causes reload at this point.
+        # Checks if not individual blog page.  Causes re-render at this point.
         if not blog:
             self.get_all_blogs_page(like_error)
             return
 
         # All below are for /blog/##### individual pages.
-        vote_dict = self.build_vote_dict([blog])
-        comments_list = Comments.get_comments(int(blog_id), 20)
         content = self.request.get('comment-content')
         valid_comment = True
 
         error = ''
 
+        # checks for comment post
         if comment_submit:
             if not self.username:
                 error = 'Must be logged in to comment'
@@ -253,18 +257,7 @@ class BlogMainHandler(Handler, BlogBaseFunctions):
                     )
                 time.sleep(1)
 
-        # fully re-renders the blog post page.
-        time_diff = (blog.last_modified - blog.created).total_seconds()
-        self.render(
-            blog_post_page,
-            blog=blog,
-            vote_dict=vote_dict,
-            time_diff=time_diff,
-            comments_list=comments_list,
-            edit_url='/blog/{blog_id}/edit'.format(blog_id=blog_id),
-            like_error=like_error,
-            error=error
-            )
+        self.get_single_blog_page(blog_id, error, like_error)
 
 
 class NewPostHandler(Handler, BlogBaseFunctions):
@@ -345,37 +338,6 @@ class DeletePostHandler(Handler, BlogBaseFunctions):
             self.blog_redirect(blog_id)
 
 
-class DeleteCommentHandler(Handler, BlogBaseFunctions):
-    def get(self, comment_id):
-        comment = Comments.comment_by_id(comment_id)
-
-        if not comment or comment.author != self.username:
-            self.redirect('/blog')
-            return
-
-        blog = Blogs.blog_by_id(comment.blog_post)
-        self.render(
-            delete_comment_page,
-            comment=comment,
-            blog=blog
-            )
-
-    def post(self, comment_id):
-        comment = Comments.comment_by_id(comment_id)
-
-        if not comment or comment.author != self.username:
-            self.redirect('/blog')
-            return
-
-        delete = self.request.get('delete')
-
-        if delete == 'Yes':
-            comment.delete()
-            time.sleep(1)
-
-        self.blog_redirect(comment.blog_post)
-
-
 class EditCommentHandler(Handler, BlogBaseFunctions):
     def get(self, comment_id):
         comment = Comments.comment_by_id(comment_id)
@@ -409,6 +371,37 @@ class EditCommentHandler(Handler, BlogBaseFunctions):
             comment.edit(comment_content)
             time.sleep(1)
             self.blog_redirect(comment.blog_post)
+
+
+class DeleteCommentHandler(Handler, BlogBaseFunctions):
+    def get(self, comment_id):
+        comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
+        blog = Blogs.blog_by_id(comment.blog_post)
+        self.render(
+            delete_comment_page,
+            comment=comment,
+            blog=blog
+            )
+
+    def post(self, comment_id):
+        comment = Comments.comment_by_id(comment_id)
+
+        if not comment or comment.author != self.username:
+            self.redirect('/blog')
+            return
+
+        delete = self.request.get('delete')
+
+        if delete == 'Yes':
+            comment.delete()
+            time.sleep(1)
+
+        self.blog_redirect(comment.blog_post)
 
 
 class SignupHandler(Handler):
